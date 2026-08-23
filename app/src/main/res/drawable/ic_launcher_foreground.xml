@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Subtle Glow Ring around core route -->
+    <path
+        android:pathData="M32,36 C32,36 46,50 54,56 C62,62 76,74 76,74"
+        android:strokeWidth="12"
+        android:strokeLineCap="round"
+        android:strokeColor="#1038BDF8" />
+
+    <!-- Connected Multimodal Trajectory Line -->
+    <path
+        android:pathData="M34,36 C42,36 48,46 54,54 C60,62 66,72 74,72"
+        android:strokeWidth="4.5"
+        android:strokeLineCap="round">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="34"
+                android:startY="36"
+                android:endX="74"
+                android:endY="72"
+                android:type="linear">
+                <item android:color="#10B981" android:offset="0.0" />
+                <item android:color="#0EA5E9" android:offset="0.55" />
+                <item android:color="#6366F1" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Branch Path forming Dynamic 'Y' shape for YATRA -->
+    <path
+        android:pathData="M74,36 C66,36 60,46 54,54"
+        android:strokeWidth="4.5"
+        android:strokeLineCap="round">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="74"
+                android:startY="36"
+                android:endX="54"
+                android:endY="54"
+                android:type="linear">
+                <item android:color="#F59E0B" android:offset="0.0" />
+                <item android:color="#0EA5E9" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Origin Node (Walk/Green) -->
+    <path
+        android:pathData="M34,36m-6,0a6,6 0 1,0 12,0a6,6 0 1,0 -12,0"
+        android:fillColor="#10B981" />
+    <path
+        android:pathData="M34,36m-2.5,0a2.5,2.5 0 1,0 5,0a2.5,2.5 0 1,0 -5,0"
+        android:fillColor="#FFFFFF" />
+
+    <!-- Transfer / Branch Node (Car/Orange) -->
+    <path
+        android:pathData="M74,36m-5.5,0a5.5,5.5 0 1,0 11,0a5.5,5.5 0 1,0 -11,0"
+        android:fillColor="#F59E0B" />
+    <path
+        android:pathData="M74,36m-2,0a2,2 0 1,0 4,0a2,2 0 1,0 -4,0"
+        android:fillColor="#FFFFFF" />
+
+    <!-- Central Intersection Hub (Cyan) -->
+    <path
+        android:pathData="M54,54m-5,0a5,5 0 1,0 10,0a5,5 0 1,0 -10,0"
+        android:fillColor="#0EA5E9" />
+    <path
+        android:pathData="M54,54m-2,0a2,2 0 1,0 4,0a2,2 0 1,0 -4,0"
+        android:fillColor="#FFFFFF" />
+
+    <!-- Destination Node (Indigo/Purple) -->
+    <path
+        android:pathData="M74,72m-7,0a7,7 0 1,0 14,0a7,7 0 1,0 -14,0"
+        android:fillColor="#6366F1" />
+    <path
+        android:pathData="M74,72m-3,0a3,3 0 1,0 6,0a3,3 0 1,0 -6,0"
+        android:fillColor="#FFFFFF" />
+
+    <!-- Pulse radar rings -->
+    <path
+        android:pathData="M34,36m-10,0a10,10 0 1,0 20,0a10,10 0 1,0 -20,0"
+        android:strokeWidth="1"
+        android:strokeColor="#4010B981" />
+</vector>

@@ -8,6 +8,14 @@ import com.example.data.model.TripEntity
 import com.example.data.model.TripPurpose
 import kotlinx.coroutines.flow.Flow
 
+import com.example.data.remote.RetrofitClient
+import com.example.data.remote.model.InsightsResponseDto
+import com.example.data.remote.model.NetworkTelemetryDto
+import com.example.data.remote.model.NetworkTripDto
+import com.example.data.remote.model.SyncRequestDto
+import com.example.data.remote.model.SyncResponseDto
+import kotlinx.coroutines.flow.first
+
 class TripRepository(private val tripDao: TripDao) {
 
     val allTrips: Flow<List<TripEntity>> = tripDao.getAllTrips()
@@ -24,7 +32,72 @@ class TripRepository(private val tripDao: TripDao) {
     suspend fun clearAllData() = tripDao.clearAllTrips()
 
     suspend fun markAllSynced() {
-        // Mock sync all pending
+        val pending = tripDao.getUnsyncedTrips().first()
+        if (pending.isNotEmpty()) {
+            tripDao.updateTripsSyncState(pending.map { it.id }, SyncState.SYNCED)
+        }
+    }
+
+    suspend fun syncPendingTripsOnline(
+        telemetry: NetworkTelemetryDto? = null
+    ): Result<SyncResponseDto> {
+        return try {
+            val pendingTrips = tripDao.getUnsyncedTrips().first()
+            if (pendingTrips.isEmpty()) {
+                return Result.success(
+                    SyncResponseDto(
+                        success = true,
+                        message = "No pending trips to synchronize",
+                        syncedTripIds = emptyList()
+                    )
+                )
+            }
+
+            val dtoList = pendingTrips.map { it.toNetworkDto() }
+            val request = SyncRequestDto(trips = dtoList, telemetry = telemetry)
+
+            val apiService = RetrofitClient.getApiService()
+            val response = apiService.syncTrips(request)
+
+            if (response.isSuccessful && response.body()?.success == true) {
+                val syncResult = response.body()!!
+                val syncedIds = if (syncResult.syncedTripIds.isNotEmpty()) {
+                    syncResult.syncedTripIds
+                } else {
+                    pendingTrips.map { it.id }
+                }
+
+                tripDao.updateTripsSyncState(syncedIds, SyncState.SYNCED)
+                Result.success(syncResult)
+            } else {
+                val errorMsg = response.errorBody()?.string() ?: response.message()
+                Result.failure(Exception("Sync server responded with error: $errorMsg"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun checkServerHealth(): Boolean {
+        return try {
+            val response = RetrofitClient.getApiService().checkHealth()
+            response.isSuccessful
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    suspend fun fetchOnlineInsights(): Result<InsightsResponseDto> {
+        return try {
+            val response = RetrofitClient.getApiService().getInsights()
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to fetch cloud insights: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     suspend fun seedInitialDataIfEmpty() {
@@ -151,3 +224,26 @@ class TripRepository(private val tripDao: TripDao) {
         tripDao.insertTrips(initialTrips)
     }
 }
+
+fun TripEntity.toNetworkDto(): NetworkTripDto = NetworkTripDto(
+    clientTripId = this.id,
+    originName = this.originName,
+    destinationName = this.destinationName,
+    startTime = this.startTime,
+    endTime = this.endTime,
+    startTimeFormatted = this.startTimeFormatted,
+    endTimeFormatted = this.endTimeFormatted,
+    dateLabel = this.dateLabel,
+    distanceKm = this.distanceKm,
+    durationMinutes = this.durationMinutes,
+    primaryMode = this.primaryMode.name,
+    modesChain = this.modesChain.map { it.name },
+    segmentsJson = this.segmentsJson,
+    confidenceScore = this.confidenceScore,
+    isVerifiedByUser = this.isVerifiedByUser,
+    purpose = this.purpose?.name,
+    companions = this.companions?.name,
+    gpsPointCount = this.gpsPointCount,
+    co2SavedKg = this.co2SavedKg,
+    rawSensorQuality = this.rawSensorQuality
+)

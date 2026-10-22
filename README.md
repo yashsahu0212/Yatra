@@ -5,7 +5,7 @@
 
 ---
 
-## 📋 About
+## About
 
 **YATRA** (Your Automated Travel Research Assistant) is an Android application built for **Smart India Hackathon 2026** that automates the collection and analysis of travel behaviour data in Indian cities.
 
@@ -15,7 +15,7 @@ Traditional travel surveys are expensive, inaccurate, and outdated within months
 
 ---
 
-## ✨ Key Features
+##  Key Features
 
 - **Automated Trip Detection** — Detects trip start/end using GPS and motion sensors without manual input
 - **Multimodal Journey Chains** — Reconstructs complete door-to-door trips with walk → bus → walk segments
@@ -30,24 +30,25 @@ Traditional travel surveys are expensive, inaccurate, and outdated within months
 
 ---
 
-## 🏗️ Tech Stack
+##  Tech Stack
 
 | Layer | Technology |
 |---|---|
 | **Language** | Kotlin |
 | **UI Framework** | Jetpack Compose (Material 3) |
-| **Architecture** | MVVM (ViewModel + StateFlow) |
+| **Architecture** | Offline-First MVVM (ViewModel + StateFlow) |
 | **Local Database** | Room (SQLite) |
-| **Navigation** | Compose Navigation with animated transitions |
-| **Networking** | Retrofit + OkHttp + Moshi |
+| **Cloud Database** | **Supabase (PostgreSQL with PostGIS)** |
+| **Backend Server** | **Node.js + Express REST API Gateway** |
+| **Networking** | Retrofit 2 + OkHttp + Moshi |
 | **Async** | Kotlin Coroutines + Flow |
 | **Build** | Gradle with Kotlin DSL + Version Catalog |
-| **Testing** | JUnit 4 + Robolectric + Roborazzi (screenshot testing) |
+| **Testing** | JUnit 4 + Robolectric + Roborazzi |
 | **Min SDK** | 24 (Android 7.0) |
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 app/src/main/java/com/example/
@@ -92,7 +93,7 @@ app/src/main/java/com/example/
 
 ---
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Prerequisites
 
@@ -124,7 +125,7 @@ app/src/main/java/com/example/
 
 ---
 
-## 🎨 Design Philosophy
+##  Design Philosophy
 
 YATRA follows a **research-grade yet user-friendly** design approach:
 
@@ -136,7 +137,7 @@ YATRA follows a **research-grade yet user-friendly** design approach:
 
 ---
 
-## 🔒 Privacy
+##  Privacy
 
 YATRA is designed with research ethics in mind:
 
@@ -148,7 +149,7 @@ YATRA is designed with research ethics in mind:
 
 ---
 
-## 📊 How It Works
+##  How It Works
 
 ```
 ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
@@ -176,7 +177,7 @@ YATRA is designed with research ethics in mind:
 
 ---
 
-## 🤝 Contributing
+##  Contributing
 
 This project was built as part of SIH 2026. Contributions, suggestions, and feedback are welcome!
 
@@ -188,13 +189,13 @@ This project was built as part of SIH 2026. Contributions, suggestions, and feed
 
 ---
 
-## 📄 License
+##  License
 
 This project is developed for academic and research purposes under SIH 2026.
 
 ---
 
-## 🙏 Acknowledgements
+##  Acknowledgements
 
 - Built with [Jetpack Compose](https://developer.android.com/jetpack/compose) and [Material 3](https://m3.material.io/)
 - Room persistence library for offline-first data storage

@@ -25,6 +25,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+import com.example.data.remote.RetrofitClient
+import com.example.data.remote.model.NetworkTelemetryDto
+
 enum class ScreenDestination {
     ONBOARDING,
     CONSENT,
@@ -45,9 +48,11 @@ data class SyncProgressState(
     val progress: Float = 0f, // 0.0 to 1.0
     val currentStepText: String = "",
     val isComplete: Boolean = false,
-    val pendingTripsCount: Int = 3,
-    val pendingLocationPoints: Int = 24,
-    val pendingConfirmations: Int = 2
+    val pendingTripsCount: Int = 0,
+    val pendingLocationPoints: Int = 0,
+    val pendingConfirmations: Int = 0,
+    val serverUrl: String = RetrofitClient.DEFAULT_EMULATOR_URL,
+    val errorMessage: String? = null
 )
 
 class YatraViewModel(application: Application) : AndroidViewModel(application) {
@@ -158,6 +163,23 @@ class YatraViewModel(application: Application) : AndroidViewModel(application) {
     init {
         viewModelScope.launch {
             repository.seedInitialDataIfEmpty()
+        }
+        viewModelScope.launch {
+            repository.unsyncedTrips.collect { pending ->
+                _syncProgress.update { current ->
+                    current.copy(
+                        pendingTripsCount = pending.size,
+                        pendingLocationPoints = pending.sumOf { it.gpsPointCount },
+                        pendingConfirmations = pending.count { it.isVerifiedByUser }
+                    )
+                }
+                _telemetry.update { current ->
+                    current.copy(
+                        pendingUploadsCount = pending.size,
+                        unsyncedLocationPoints = pending.sumOf { it.gpsPointCount }
+                    )
+                }
+            }
         }
     }
 
@@ -308,47 +330,81 @@ class YatraViewModel(application: Application) : AndroidViewModel(application) {
         _telemetry.update { it.copy(isOnline = !it.isOnline) }
     }
 
+    fun setBackendServerUrl(url: String) {
+        RetrofitClient.setBaseUrl(url)
+        _syncProgress.update { it.copy(serverUrl = RetrofitClient.getBaseUrl()) }
+    }
+
     fun startSyncSimulation() {
         viewModelScope.launch {
-            _syncProgress.value = SyncProgressState(
-                isSyncing = true,
-                progress = 0.1f,
-                currentStepText = "Connecting to Research Gateway...",
-                isComplete = false
-            )
+            if (!_telemetry.value.isOnline) {
+                _syncProgress.update {
+                    it.copy(
+                        isSyncing = false,
+                        errorMessage = "Device is in Offline Mode. Sensor data is securely buffered locally."
+                    )
+                }
+                navigateTo(ScreenDestination.SYNC_STATUS)
+                return@launch
+            }
+
+            _syncProgress.update {
+                it.copy(
+                    isSyncing = true,
+                    progress = 0.25f,
+                    currentStepText = "Connecting to Cloud Gateway (${RetrofitClient.getBaseUrl()})...",
+                    errorMessage = null,
+                    isComplete = false
+                )
+            }
             navigateTo(ScreenDestination.SYNC_STATUS)
-            
-            delay(900)
+
+            delay(350)
             _syncProgress.update {
                 it.copy(
-                    progress = 0.45f,
-                    currentStepText = "Uploading 3 trips & 24 location records..."
+                    progress = 0.60f,
+                    currentStepText = "Transmitting trips and telemetry to Supabase PostgreSQL database..."
                 )
             }
-            delay(1200)
-            _syncProgress.update {
-                it.copy(
-                    progress = 0.85f,
-                    currentStepText = "Submitting 2 trip confirmations..."
-                )
-            }
-            delay(900)
-            _syncProgress.update {
-                it.copy(
-                    progress = 1.0f,
-                    currentStepText = "Everything is up to date",
-                    isComplete = true,
-                    pendingTripsCount = 0,
-                    pendingLocationPoints = 0,
-                    pendingConfirmations = 0
-                )
-            }
-            _telemetry.update {
-                it.copy(
-                    pendingUploadsCount = 0,
-                    unsyncedLocationPoints = 0,
-                    lastSyncFormatted = "Just now"
-                )
+
+            val telemetryDto = NetworkTelemetryDto(
+                sensorFusionStatus = _telemetry.value.sensorFusionStatus,
+                motionCadenceSpm = _telemetry.value.motionCadenceSpm,
+                gpsAccuracyMeters = _telemetry.value.gpsAccuracyMeters,
+                batteryOptimizationIgnored = _telemetry.value.batteryOptimizationIgnored,
+                unsyncedLocationPoints = _telemetry.value.unsyncedLocationPoints,
+                isOnline = _telemetry.value.isOnline
+            )
+
+            val result = repository.syncPendingTripsOnline(telemetryDto)
+
+            if (result.isSuccess) {
+                val syncData = result.getOrNull()
+                _syncProgress.update {
+                    it.copy(
+                        progress = 1.0f,
+                        currentStepText = syncData?.message ?: "Everything is up to date",
+                        isComplete = true,
+                        isSyncing = false,
+                        errorMessage = null
+                    )
+                }
+                _telemetry.update {
+                    it.copy(
+                        lastSyncFormatted = "Just now"
+                    )
+                }
+            } else {
+                val errorMsg = result.exceptionOrNull()?.localizedMessage ?: "Connection error"
+                delay(300)
+                _syncProgress.update {
+                    it.copy(
+                        isSyncing = false,
+                        progress = 0f,
+                        errorMessage = "Gateway unreachable ($errorMsg)",
+                        currentStepText = "Offline buffer active. Trips safely preserved in local Room DB until next sync."
+                    )
+                }
             }
         }
     }

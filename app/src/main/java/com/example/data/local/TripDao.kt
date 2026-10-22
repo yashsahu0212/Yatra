@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import com.example.data.model.SyncState
 import com.example.data.model.TripEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -22,6 +23,9 @@ interface TripDao {
 
     @Query("SELECT * FROM trips WHERE syncState != 'SYNCED'")
     fun getUnsyncedTrips(): Flow<List<TripEntity>>
+
+    @Query("UPDATE trips SET syncState = :syncState WHERE id IN (:tripIds)")
+    suspend fun updateTripsSyncState(tripIds: List<Long>, syncState: SyncState)
 
     @Query("SELECT COUNT(*) FROM trips")
     suspend fun getTripCount(): Int

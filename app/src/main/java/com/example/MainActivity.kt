@@ -306,7 +306,8 @@ fun YatraApp(viewModel: YatraViewModel = viewModel()) {
                             isOnline = telemetry.isOnline,
                             onToggleOnline = { viewModel.toggleOnlineStatus() },
                             onStartSync = { viewModel.startSyncSimulation() },
-                            onBack = { viewModel.navigateTo(ScreenDestination.HOME) }
+                            onBack = { viewModel.navigateTo(ScreenDestination.HOME) },
+                            onUpdateServerUrl = { viewModel.setBackendServerUrl(it) }
                         )
                     }
                 }

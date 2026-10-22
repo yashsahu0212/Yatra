@@ -48,6 +48,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.material.icons.filled.Dns
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -65,6 +74,7 @@ fun OfflineSyncScreen(
     onToggleOnline: () -> Unit,
     onStartSync: () -> Unit,
     onBack: () -> Unit,
+    onUpdateServerUrl: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val isDark = isSystemInDarkTheme()
@@ -72,6 +82,8 @@ fun OfflineSyncScreen(
         targetValue = syncState.progress,
         label = "sync_progress"
     )
+    var showUrlDialog by remember { mutableStateOf(false) }
+    var editUrlText by remember(syncState.serverUrl) { mutableStateOf(syncState.serverUrl) }
 
     Column(
         modifier = modifier
@@ -183,6 +195,90 @@ fun OfflineSyncScreen(
                     )
                 }
             }
+
+            // Cloud Gateway & Database Card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp)),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else Color(0xFFF8FAFC)
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Dns,
+                                contentDescription = null,
+                                tint = YatraPrimaryCyan,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "Gateway & Cloud Database",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        TextButton(onClick = { showUrlDialog = true }) {
+                            Text(
+                                text = "Change URL",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = YatraPrimaryCyan
+                            )
+                        }
+                    }
+                    Text(
+                        text = "Server: ${syncState.serverUrl}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "Database: Supabase PostgreSQL Cloud",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFF059669),
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
+            if (syncState.errorMessage != null) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = StatusWarningAmber.copy(alpha = 0.15f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = StatusWarningAmber,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            text = syncState.errorMessage,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
         }
 
         // Bottom Actions (Sync Now & Simulate Network Toggle)
@@ -234,6 +330,51 @@ fun OfflineSyncScreen(
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
+        }
+
+        if (showUrlDialog) {
+            AlertDialog(
+                onDismissRequest = { showUrlDialog = false },
+                title = { Text("Configure Gateway URL") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            "Enter the URL for your YATRA backend server:",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        OutlinedTextField(
+                            value = editUrlText,
+                            onValueChange = { editUrlText = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = { editUrlText = "http://10.0.2.2:5000/" },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Emulator", style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(onClick = {
+                        onUpdateServerUrl(editUrlText.trim())
+                        showUrlDialog = false
+                    }) {
+                        Text("Save")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showUrlDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
     }
 }
